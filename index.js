@@ -27,6 +27,12 @@ async function checkYouTube() {
 
 client.once("ready", () => {
     console.log("Bot listo");
+
+    client.user.setPresence({
+        activities: [{ name: "a Triko", type: 3 }], // type 3 = Watching / Viendo
+        status: "online"
+    });
+
     setInterval(checkYouTube, 60_000);
 });
 
