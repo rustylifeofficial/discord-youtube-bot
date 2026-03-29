@@ -21,7 +21,7 @@ async function checkYouTube() {
     if (videoId !== ultimoVideo) {
         ultimoVideo = videoId;
         const canal = client.channels.cache.get(CHANNEL_ID);
-        if (canal) canal.send(`🎬 ¡Nuevo video subido! https://youtu.be/${videoId}`);
+        if (canal) canal.send(`@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 Disfrútalo aquí:\nhttps://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`);
     }
 }
 
