@@ -1,5 +1,6 @@
 const axios = require("axios");
 const express = require("express");
+const fs = require("fs");
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
 // --- Servidor Express para Render ---
@@ -20,7 +21,14 @@ const client = new Client({
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const YT_CHANNEL = process.env.YT_CHANNEL;
 
+// --- Cargar último video desde archivo ---
 let ultimoVideo = null;
+const archivo = "ultimoVideo.txt";
+
+if (fs.existsSync(archivo)) {
+    ultimoVideo = fs.readFileSync(archivo, "utf8").trim();
+    console.log("Último video cargado:", ultimoVideo);
+}
 
 // --- Detectar si un video es un Short ---
 async function esShort(videoId) {
@@ -40,10 +48,13 @@ async function checkYouTube() {
         const res = await axios.get(url);
         const xml = res.data;
 
-        const match = xml.match(/<yt:videoId>(.*?)<\/yt:videoId>/);
-        if (!match) return;
+        const idMatch = xml.match(/<yt:videoId>(.*?)<\/yt:videoId>/);
+        const titleMatch = xml.match(/<title>(.*?)<\/title>/);
 
-        const videoId = match[1];
+        if (!idMatch || !titleMatch) return;
+
+        const videoId = idMatch[1];
+        const titulo = titleMatch[1].toLowerCase(); // minúsculas para comparar fácil
 
         // --- Ignorar Shorts ---
         if (await esShort(videoId)) {
@@ -51,17 +62,40 @@ async function checkYouTube() {
             return;
         }
 
-        // --- Nuevo video ---
-        if (videoId !== ultimoVideo) {
-            ultimoVideo = videoId;
-
-            const canal = await client.channels.fetch(CHANNEL_ID);
-            if (canal) {
-                canal.send(
-                    `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`
-                );
-            }
+        // --- Si es el mismo video, no anunciar ---
+        if (videoId === ultimoVideo) {
+            console.log("Video repetido, no se anuncia.");
+            return;
         }
+
+        // --- Determinar mensaje según el título ---
+        let mensaje = "";
+
+        if (
+            titulo.includes("update") ||
+            titulo.includes("actualizacion")
+        ) {
+            mensaje = `@everyone\n\n🛠 **Nueva Update de Rust**\n\n📺 https://youtu.be/${videoId}`;
+        }
+        else if (
+            titulo.includes("tienda") ||
+            titulo.includes("skin") ||
+            titulo.includes("skins")
+        ) {
+            mensaje = `@everyone\n\n🎨 **Nueva Tienda de Rust**\n\n📺 https://youtu.be/${videoId}`;
+        }
+        else {
+            mensaje = `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+        }
+
+        // --- Guardar el nuevo video ---
+        ultimoVideo = videoId;
+        fs.writeFileSync(archivo, videoId);
+
+        // --- Enviar mensaje ---
+        const canal = await client.channels.fetch(CHANNEL_ID);
+        if (canal) canal.send(mensaje);
+
     } catch (err) {
         console.error("Error al comprobar YouTube:", err.message);
     }
