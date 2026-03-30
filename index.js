@@ -30,17 +30,6 @@ if (fs.existsSync(archivo)) {
     console.log("Último video cargado:", ultimoVideo);
 }
 
-// --- Detectar si un video es un Short ---
-async function esShort(videoId) {
-    try {
-        const res = await axios.get(`https://www.youtube.com/watch?v=${videoId}`);
-        return res.data.includes("shortsVideoRenderer");
-    } catch (err) {
-        console.error("Error comprobando si es short:", err.message);
-        return false;
-    }
-}
-
 // --- Comprobar YouTube ---
 async function checkYouTube() {
     try {
@@ -54,11 +43,14 @@ async function checkYouTube() {
         if (!idMatch || !titleMatch) return;
 
         const videoId = idMatch[1];
-        const titulo = titleMatch[1].toLowerCase(); // minúsculas para comparar fácil
+        const titulo = titleMatch[1].toLowerCase();
 
-        // --- Ignorar Shorts ---
-        if (await esShort(videoId)) {
-            console.log("Short detectado, ignorando:", videoId);
+        // --- Detectar Shorts por URL ---
+        const linkMatch = xml.match(/<link rel="alternate" href="(.*?)"\/>/);
+        const link = linkMatch ? linkMatch[1] : "";
+
+        if (link.includes("/shorts/")) {
+            console.log("Short detectado por URL, ignorando:", videoId);
             return;
         }
 
@@ -68,35 +60,30 @@ async function checkYouTube() {
             return;
         }
 
-// --- Determinar mensaje según el título ---
-let mensaje = "";
+        // --- Determinar mensaje según el título ---
+        let mensaje = "";
 
-const esUpdate =
-    titulo.includes("update") ||
-    titulo.includes("actualizacion");
+        const esUpdate =
+            titulo.includes("update") ||
+            titulo.includes("actualizacion");
 
-const esTienda =
-    titulo.includes("tienda") ||
-    titulo.includes("skin") ||
-    titulo.includes("skins");
+        const esTienda =
+            titulo.includes("tienda") ||
+            titulo.includes("skin") ||
+            titulo.includes("skins");
 
-// Si contiene ambas
-if (esUpdate && esTienda) {
-    mensaje = `@everyone\n\n🔥 **Nueva Update + Tienda de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-}
-// Solo update
-else if (esUpdate) {
-    mensaje = `@everyone\n\n🛠 **Nueva Update de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-}
-// Solo tienda/skins
-else if (esTienda) {
-    mensaje = `@everyone\n\n🎨 **Nueva Tienda de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-}
-// Mensaje normal
-else {
-    mensaje = `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-}
-
+        if (esUpdate && esTienda) {
+            mensaje = `@everyone\n\n🔥 **Nueva Update + Tienda de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+        }
+        else if (esUpdate) {
+            mensaje = `@everyone\n\n🛠 **Nueva Update de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+        }
+        else if (esTienda) {
+            mensaje = `@everyone\n\n🎨 **Nueva Tienda de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+        }
+        else {
+            mensaje = `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+        }
 
         // --- Guardar el nuevo video ---
         ultimoVideo = videoId;
@@ -120,7 +107,7 @@ client.once("ready", () => {
         status: "online"
     });
 
-    setInterval(checkYouTube, 60_000); // cada minuto
+    setInterval(checkYouTube, 60_000);
 });
 
 // --- Login ---
