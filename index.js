@@ -37,20 +37,25 @@ async function checkYouTube() {
         const res = await axios.get(url);
         const xml = res.data;
 
-        const idMatch = xml.match(/<yt:videoId>(.*?)<\/yt:videoId>/);
-        const titleMatch = xml.match(/<title>(.*?)<\/title>/);
+        // --- Tomar SOLO la primera entrada ---
+        const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
+        if (!entryMatch) return;
 
-        if (!idMatch || !titleMatch) return;
+        const entry = entryMatch[1];
+
+        const idMatch = entry.match(/<yt:videoId>(.*?)<\/yt:videoId>/);
+        const titleMatch = entry.match(/<title>(.*?)<\/title>/);
+        const linkMatch = entry.match(/<link rel="alternate" href="(.*?)"/);
+
+        if (!idMatch || !titleMatch || !linkMatch) return;
 
         const videoId = idMatch[1];
         const titulo = titleMatch[1].toLowerCase();
+        const link = linkMatch[1];
 
         // --- Detectar Shorts por URL ---
-        const linkMatch = xml.match(/<link rel="alternate" href="(.*?)"\/>/);
-        const link = linkMatch ? linkMatch[1] : "";
-
         if (link.includes("/shorts/")) {
-            console.log("Short detectado por URL, ignorando:", videoId);
+            console.log("Short detectado, ignorando:", videoId);
             return;
         }
 
