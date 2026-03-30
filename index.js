@@ -19,7 +19,25 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages
     ],
-    partials: [Partials.Channel]
+    partials: [Partials.Channel],
+    retryLimit: 5
+});
+
+// --- Handlers para evitar desconexiones ---
+client.on("error", (err) => {
+    console.error("❌ Error en Discord:", err);
+});
+
+client.on("shardDisconnect", (event, shardId) => {
+    console.log(`⚠️ Shard ${shardId} desconectado. Intentando reconectar...`);
+});
+
+client.on("shardReconnecting", (shardId) => {
+    console.log(`🔄 Reconexion del shard ${shardId} en progreso...`);
+});
+
+client.on("shardResume", (shardId) => {
+    console.log(`✅ Shard ${shardId} reconectado correctamente`);
 });
 
 // --- Variables de entorno ---
@@ -42,7 +60,6 @@ async function checkYouTube() {
         const res = await axios.get(url);
         const xml = res.data;
 
-        // --- Tomar SOLO la primera entrada ---
         const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
         if (!entryMatch) return;
 
@@ -58,19 +75,16 @@ async function checkYouTube() {
         const titulo = titleMatch[1].toLowerCase();
         const link = linkMatch[1];
 
-        // --- Detectar Shorts ---
         if (link.includes("/shorts/")) {
             console.log("Short detectado, ignorando:", videoId);
             return;
         }
 
-        // --- Si es el mismo video, no anunciar ---
         if (videoId === ultimoVideo) {
             console.log("Video repetido, no se anuncia.");
             return;
         }
 
-        // --- Determinar mensaje ---
         let mensaje = "";
 
         const esUpdate =
@@ -95,11 +109,9 @@ async function checkYouTube() {
             mensaje = `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
         }
 
-        // --- Guardar el nuevo video ---
         ultimoVideo = videoId;
         fs.writeFileSync(archivo, videoId);
 
-        // --- Enviar mensaje ---
         const canal = await client.channels.fetch(CHANNEL_ID);
         if (canal) canal.send(mensaje);
 
@@ -117,7 +129,6 @@ client.once("ready", () => {
         status: "online"
     });
 
-    // Intervalo con log para evitar idle
     setInterval(() => {
         console.log("⏳ Chequeando YouTube...");
         checkYouTube();
