@@ -2,10 +2,12 @@ const axios = require("axios");
 const express = require("express");
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
+// --- Servidor Express para Render ---
 const app = express();
-app.get("/", (req, res) => res.send("Bot funcionando"));
+app.get("/", (req, res) => res.send("Bot funcionando correctamente"));
 app.listen(process.env.PORT || 3000);
 
+// --- Discord Client ---
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -14,11 +16,24 @@ const client = new Client({
     partials: [Partials.Channel]
 });
 
+// --- Variables de entorno ---
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const YT_CHANNEL = process.env.YT_CHANNEL;
 
 let ultimoVideo = null;
 
+// --- Detectar si un video es un Short ---
+async function esShort(videoId) {
+    try {
+        const res = await axios.get(`https://www.youtube.com/watch?v=${videoId}`);
+        return res.data.includes("shortsVideoRenderer");
+    } catch (err) {
+        console.error("Error comprobando si es short:", err.message);
+        return false;
+    }
+}
+
+// --- Comprobar YouTube ---
 async function checkYouTube() {
     try {
         const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${YT_CHANNEL}`;
@@ -30,6 +45,13 @@ async function checkYouTube() {
 
         const videoId = match[1];
 
+        // --- Ignorar Shorts ---
+        if (await esShort(videoId)) {
+            console.log("Short detectado, ignorando:", videoId);
+            return;
+        }
+
+        // --- Nuevo video ---
         if (videoId !== ultimoVideo) {
             ultimoVideo = videoId;
 
@@ -45,6 +67,7 @@ async function checkYouTube() {
     }
 }
 
+// --- Bot listo ---
 client.once("ready", () => {
     console.log("Bot listo");
 
@@ -53,11 +76,8 @@ client.once("ready", () => {
         status: "online"
     });
 
-    setInterval(checkYouTube, 60_000);
+    setInterval(checkYouTube, 60_000); // cada minuto
 });
 
-client.login(process.env.TOKEN);
-
-});
-
+// --- Login ---
 client.login(process.env.TOKEN);
