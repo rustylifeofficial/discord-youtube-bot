@@ -8,6 +8,11 @@ const app = express();
 app.get("/", (req, res) => res.send("Bot funcionando correctamente"));
 app.listen(process.env.PORT || 3000);
 
+// --- Mantener Render despierto ---
+setInterval(() => {
+    axios.get("https://discord-youtube-bot-fheh.onrender.com").catch(() => {});
+}, 5 * 60 * 1000); // cada 5 minutos
+
 // --- Discord Client ---
 const client = new Client({
     intents: [
@@ -53,7 +58,7 @@ async function checkYouTube() {
         const titulo = titleMatch[1].toLowerCase();
         const link = linkMatch[1];
 
-        // --- Detectar Shorts por URL ---
+        // --- Detectar Shorts ---
         if (link.includes("/shorts/")) {
             console.log("Short detectado, ignorando:", videoId);
             return;
@@ -65,7 +70,7 @@ async function checkYouTube() {
             return;
         }
 
-        // --- Determinar mensaje según el título ---
+        // --- Determinar mensaje ---
         let mensaje = "";
 
         const esUpdate =
@@ -112,7 +117,11 @@ client.once("ready", () => {
         status: "online"
     });
 
-    setInterval(checkYouTube, 60_000);
+    // Intervalo con log para evitar idle
+    setInterval(() => {
+        console.log("⏳ Chequeando YouTube...");
+        checkYouTube();
+    }, 60_000);
 });
 
 // --- Login ---
