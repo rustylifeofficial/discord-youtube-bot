@@ -68,25 +68,35 @@ async function checkYouTube() {
             return;
         }
 
-        // --- Determinar mensaje según el título ---
-        let mensaje = "";
+// --- Determinar mensaje según el título ---
+let mensaje = "";
 
-        if (
-            titulo.includes("update") ||
-            titulo.includes("actualizacion")
-        ) {
-            mensaje = `@everyone\n\n🛠 **Nueva Update de Rust**\n\n📺 https://youtu.be/${videoId}`;
-        }
-        else if (
-            titulo.includes("tienda") ||
-            titulo.includes("skin") ||
-            titulo.includes("skins")
-        ) {
-            mensaje = `@everyone\n\n🎨 **Nueva Tienda de Rust**\n\n📺 https://youtu.be/${videoId}`;
-        }
-        else {
-            mensaje = `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-        }
+const esUpdate =
+    titulo.includes("update") ||
+    titulo.includes("actualizacion");
+
+const esTienda =
+    titulo.includes("tienda") ||
+    titulo.includes("skin") ||
+    titulo.includes("skins");
+
+// Si contiene ambas
+if (esUpdate && esTienda) {
+    mensaje = `@everyone\n\n🔥 **Nueva Update + Tienda de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+}
+// Solo update
+else if (esUpdate) {
+    mensaje = `@everyone\n\n🛠 **Nueva Update de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+}
+// Solo tienda/skins
+else if (esTienda) {
+    mensaje = `@everyone\n\n🎨 **Nueva Tienda de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+}
+// Mensaje normal
+else {
+    mensaje = `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
+}
+
 
         // --- Guardar el nuevo video ---
         ultimoVideo = videoId;
