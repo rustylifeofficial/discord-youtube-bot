@@ -72,46 +72,28 @@ async function checkYouTube() {
         if (!idMatch || !titleMatch || !linkMatch) return;
 
         const videoId = idMatch[1];
-        const titulo = titleMatch[1].toLowerCase();
         const link = linkMatch[1];
 
+        // Ignorar shorts
         if (link.includes("/shorts/")) {
             console.log("Short detectado, ignorando:", videoId);
             return;
         }
 
+        // Evitar repetir el mismo video
         if (videoId === ultimoVideo) {
             console.log("Video repetido, no se anuncia.");
             return;
         }
 
-        let mensaje = "";
+        // --- MENSAJE ÚNICO ---
+        const mensaje = `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
 
-        const esUpdate =
-            titulo.includes("update") ||
-            titulo.includes("actualizacion");
-
-        const esTienda =
-            titulo.includes("tienda") ||
-            titulo.includes("skin") ||
-            titulo.includes("skins");
-
-        if (esUpdate && esTienda) {
-            mensaje = `@everyone\n\n🔥 **Nueva Update + Tienda de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-        }
-        else if (esUpdate) {
-            mensaje = `@everyone\n\n🛠 **Nueva Update de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-        }
-        else if (esTienda) {
-            mensaje = `@everyone\n\n🎨 **Nueva Tienda de Rust**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-        }
-        else {
-            mensaje = `@everyone\n\n🎬 **¡Nuevo video disponible en el canal!**\n\n📺 https://youtu.be/${videoId}\n\n✨ ¡No olvides dejar tu like y comentario!`;
-        }
-
+        // Guardar ID del último video
         ultimoVideo = videoId;
         fs.writeFileSync(archivo, videoId);
 
+        // Enviar mensaje al canal
         const canal = await client.channels.fetch(CHANNEL_ID);
         if (canal) canal.send(mensaje);
 
